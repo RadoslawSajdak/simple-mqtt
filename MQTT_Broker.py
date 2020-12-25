@@ -37,8 +37,11 @@ def run_server():
                             new_topic = new_topic[1][:len(new_topic[1])-1]
                             print("Subscribing: ",new_topic)
                             sub = inputs[inputs.index(fds)]
-                            topics["test0"].append(sub)
-                            sub.sendall("Youre subscriber of ".encode() + new_topic.encode())
+                            try:
+                                topics[new_topic].append(sub)
+                            except:
+                                topics[new_topic] = [sub]
+                            sub.sendall("You're subscriber of ".encode() + new_topic.encode())
                         # Publishing #
                         elif str(data).find("p/") > 0:
                             print("Publishing: ")
@@ -60,10 +63,10 @@ def run_server():
                             print("unsubscribing: ",rm_topic)
                             usub = inputs[inputs.index(fds)]
                             try:
-                                topics["test0"].remove(usub)
+                                topics[rm_topic].remove(usub)
                                 usub.sendall(("Unsubscribed from " + rm_topic).encode())
                             except:
-                                usub.sendall(("You're not subscriber of" + rm_topic).encode())
+                                usub.sendall(("You're not subscriber of " + rm_topic).encode())
                         if not data:
                             inputs.remove(fds)
                         else:

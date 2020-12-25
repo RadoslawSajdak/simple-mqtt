@@ -21,9 +21,6 @@ def connect():
         thrd = threading.Thread(target=reading_thread, args = (s,))
         thrd.start()
         while(1):
-            
-            #data = s.recv(1024)
-            #print(data)
             s.sendall(input().encode())
             
         s.shutdown(socket.SHUT_RDWR)
