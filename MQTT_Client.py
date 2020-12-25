@@ -17,8 +17,8 @@ def connect():
         
         while(1):
             s.sendall(input().encode())
-            #data = s.recv(1024)
-            #print(data)
+            data = s.recv(1024)
+            print(data)
 
         s.shutdown(socket.SHUT_RDWR)
         s.close()

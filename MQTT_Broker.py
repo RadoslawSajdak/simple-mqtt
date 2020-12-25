@@ -34,7 +34,22 @@ def run_server():
                         data = fds.recv(1024)         
                         if data == b"+/test0":
                             print ("GOTCHA!")  
-                            print(inputs.index(fds))
+                            topics["test0"].append(inputs[inputs.index(fds)])
+                            print(topics)
+                        if str(data).find("p/") > 0:
+                            print("Publishing: ")
+                            rcv = str(data).split("/")
+                            try:
+                                pub = rcv[2][:len(rcv[2]) - 1]
+                                top = rcv[1][:len(rcv[1])]
+                                print(pub, "in", top)
+
+                                # Send to all subscribers #
+                                for snd in topics[top]:
+                                    print(topics[top])
+                                    snd.sendall(pub.encode())
+                            except:
+                                print("syntax is p/topic/message")
                         if not data:
                             inputs.remove(fds)
                         else:
