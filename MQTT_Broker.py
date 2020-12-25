@@ -9,6 +9,10 @@ HOST = "127.0.0.1"
 PORT = 3000
 MAX_DEVICES = 10
 WELCOME_MESS = b"You're welcome at server\n"
+SUBSCRIBER = b"NOW YOURE SUBSCRIBER"
+topics = {
+    "test0" : []
+}
 
 def run_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -23,10 +27,14 @@ def run_server():
                     if fds is s:
                         conn, addr = fds.accept()
                         inputs.append(conn)
-                        print("Connection from ", addr[0])
+                        print("Connection from ", addr[0],addr[1])
                         conn.sendall(WELCOME_MESS)
+                        print(conn)
                     else:
-                        data = fds.recv(1024)                    
+                        data = fds.recv(1024)         
+                        if data == b"+/test0":
+                            print ("GOTCHA!")  
+                            print(inputs.index(fds))
                         if not data:
                             inputs.remove(fds)
                         else:

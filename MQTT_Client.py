@@ -14,9 +14,12 @@ def connect():
         s.connect((room, PORT))
         sleep(3)
         s.sendall(MESSAGE)
+        
         while(1):
-            data = s.recv(1024)
-            print(data)
+            s.sendall(input().encode())
+            #data = s.recv(1024)
+            #print(data)
+
         s.shutdown(socket.SHUT_RDWR)
         s.close()
     sleep(1)
