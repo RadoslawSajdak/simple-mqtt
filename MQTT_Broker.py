@@ -5,7 +5,7 @@ ni.ifaddresses('wlan0')
 from time import sleep
 
 HOST = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
-HOST = "127.0.0.1"
+HOST = "192.168.0.144"
 PORT = 3000
 MAX_DEVICES = 10
 WELCOME_MESS = b"You're welcome at server\n"
