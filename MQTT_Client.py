@@ -16,10 +16,11 @@ def connect():
         s.sendall(MESSAGE)
         
         while(1):
-            s.sendall(input().encode())
+            
             data = s.recv(1024)
             print(data)
-
+            s.sendall(input().encode())
+            
         s.shutdown(socket.SHUT_RDWR)
         s.close()
     sleep(1)

@@ -32,10 +32,14 @@ def run_server():
                         print(conn)
                     else:
                         data = fds.recv(1024)         
-                        if data == b"+/test0":
+                        if str(data).find("+/") > 0:
+                            new_topic = str(data).split("/")
+                            new_topic = new_topic[1][:len(new_topic[1])-1]
+                            print("Subscribing: ",new_topic)
+                            sub = inputs[inputs.index(fds)]
                             print ("GOTCHA!")  
-                            topics["test0"].append(inputs[inputs.index(fds)])
-                            print(topics)
+                            topics["test0"].append(sub)
+                            sub.sendall("Youre subscriber of ".encode() + new_topic.encode())
                         if str(data).find("p/") > 0:
                             print("Publishing: ")
                             rcv = str(data).split("/")
@@ -46,8 +50,7 @@ def run_server():
 
                                 # Send to all subscribers #
                                 for snd in topics[top]:
-                                    print(topics[top])
-                                    snd.sendall(pub.encode())
+                                    snd.sendall((pub + " <-from " + top).encode())
                             except:
                                 print("syntax is p/topic/message")
                         if not data:
