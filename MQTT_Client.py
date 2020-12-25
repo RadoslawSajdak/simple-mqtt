@@ -11,7 +11,7 @@ room = "192.168.0.144"
 
 def reading_thread(socket):
     while(1):
-        data = socket.recv(1024)
+        data = socket.recv(1024).decode('utf-8')
         print(data)
 
 

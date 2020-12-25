@@ -5,7 +5,7 @@ ni.ifaddresses('wlan0')
 from time import sleep
 
 HOST = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
-HOST = "127.0.0.1"
+HOST = "192.168.0.144"
 PORT = 3000
 MAX_DEVICES = 10
 WELCOME_MESS = b"You're welcome at server\n"
@@ -29,18 +29,18 @@ def run_server():
                         inputs.append(conn)
                         print("Connection from ", addr[0],addr[1])
                         conn.sendall(WELCOME_MESS)
-                        print(conn)
                     else:
                         data = fds.recv(1024)         
+                        # Subscribing #
                         if str(data).find("+/") > 0:
                             new_topic = str(data).split("/")
                             new_topic = new_topic[1][:len(new_topic[1])-1]
                             print("Subscribing: ",new_topic)
                             sub = inputs[inputs.index(fds)]
-                            print ("GOTCHA!")  
                             topics["test0"].append(sub)
                             sub.sendall("Youre subscriber of ".encode() + new_topic.encode())
-                        if str(data).find("p/") > 0:
+                        # Publishing #
+                        elif str(data).find("p/") > 0:
                             print("Publishing: ")
                             rcv = str(data).split("/")
                             try:
@@ -53,6 +53,17 @@ def run_server():
                                     snd.sendall((pub + " <-from " + top).encode())
                             except:
                                 print("syntax is p/topic/message")
+                        # Unsubscribing #
+                        elif str(data).find("-/") > 0:
+                            rm_topic = str(data).split("/")
+                            rm_topic = rm_topic[1][:len(rm_topic[1])-1]
+                            print("unsubscribing: ",rm_topic)
+                            usub = inputs[inputs.index(fds)]
+                            try:
+                                topics["test0"].remove(usub)
+                                usub.sendall(("Unsubscribed from " + rm_topic).encode())
+                            except:
+                                usub.sendall(("You're not subscriber of" + rm_topic).encode())
                         if not data:
                             inputs.remove(fds)
                         else:
