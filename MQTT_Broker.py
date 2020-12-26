@@ -1,16 +1,19 @@
 import socket,select
 ## Get local interface ip ##
 import netifaces as ni
-ni.ifaddresses('wlan0')
 from time import sleep
 
+ni.ifaddresses('wlan0')
 HOST = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
-HOST = "192.168.0.144"
+#HOST = "192.168.0.144" # Uncomment this line to set server ip manually
 PORT = 3000
 MAX_DEVICES = 10
+
 WELCOME_MESS = b"You're welcome at server\n"
 SUBSCRIBER = b"NOW YOURE SUBSCRIBER"
-topics = {
+
+
+topics = {          # Dictionary for topics joined with list of it's subscribers
     "test0" : []
 }
 
@@ -20,6 +23,7 @@ def run_server():
         s.bind((HOST, PORT))
         s.listen(MAX_DEVICES)
         inputs = [s]
+        # Main loop #
         while(1):
             infds, outfds, errfds = select.select(inputs, inputs, [], MAX_DEVICES)
             if len(infds) != 0:
@@ -30,47 +34,65 @@ def run_server():
                         print("Connection from ", addr[0],addr[1])
                         conn.sendall(WELCOME_MESS)
                     else:
-                        data = fds.recv(1024)         
+                        """\
+                            All received data should be formated with pattern:
+                            subscribing: +/[topic]
+                            unsubscribing: -/[topic]
+                            publishing: p/[topic to publish in]/[Message]
+
+                            Other data will be printed on screen and removed from the memory
+                        """
+                        data = fds.recv(1024)    
+                        cli_sock = inputs[inputs.index(fds)]
+                        cli_addr = cli_sock.getpeername()
+                        
                         # Subscribing #
                         if str(data).find("+/") > 0:
-                            new_topic = str(data).split("/")
+                            
+                            new_topic = str(data).split("/")            # Extract topic from string
                             new_topic = new_topic[1][:len(new_topic[1])-1]
-                            print("Subscribing: ",new_topic)
-                            sub = inputs[inputs.index(fds)]
+                            
                             try:
-                                topics[new_topic].append(sub)
+                                topics[new_topic].append(cli_sock)
                             except:
-                                topics[new_topic] = [sub]
-                            sub.sendall("You're subscriber of ".encode() + new_topic.encode())
+                                topics[new_topic] = [cli_sock]
+                            print(cli_addr, "Subscribed:",new_topic)
+
+                            cli_sock.sendall("You're subscriber of ".encode() + new_topic.encode())         # Return message to client
                         # Publishing #
                         elif str(data).find("p/") > 0:
-                            print("Publishing: ")
                             rcv = str(data).split("/")
+                            
                             try:
                                 pub = rcv[2][:len(rcv[2]) - 1]
                                 top = rcv[1][:len(rcv[1])]
-                                print(pub, "in", top)
-
+                                
                                 # Send to all subscribers #
                                 for snd in topics[top]:
                                     snd.sendall((pub + " <-from " + top).encode())
+                                print(cli_addr, "Published in", top)
                             except:
-                                print("syntax is p/topic/message")
+                                cli_sock.sendall("syntax is p/topic/message".encode())
+
+
                         # Unsubscribing #
                         elif str(data).find("-/") > 0:
                             rm_topic = str(data).split("/")
                             rm_topic = rm_topic[1][:len(rm_topic[1])-1]
-                            print("unsubscribing: ",rm_topic)
-                            usub = inputs[inputs.index(fds)]
+
                             try:
-                                topics[rm_topic].remove(usub)
-                                usub.sendall(("Unsubscribed from " + rm_topic).encode())
+                                topics[rm_topic].remove(cli_sock)
+                                cli_sock.sendall(("Unsubscribed from " + rm_topic).encode())
                             except:
-                                usub.sendall(("You're not subscriber of " + rm_topic).encode())
+                                cli_sock.sendall(("You're not subscriber of " + rm_topic).encode())
+                            
+                            print(cli_addr, "Unsubscribed from: ",rm_topic)
+                            
                         if not data:
                             inputs.remove(fds)
                         else:
                             print(data)
 
 if __name__ == "__main__":
+    print( "Running server on ", HOST,":",PORT,"| Max devices: ",MAX_DEVICES)
     run_server()

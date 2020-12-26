@@ -1,4 +1,5 @@
 import socket
+import sys
 ## Get local interface ip ##
 import netifaces as ni
 ni.ifaddresses('wlan0')
@@ -28,4 +29,12 @@ def connect():
     sleep(1)
 
 if __name__=="__main__":
-    connect()
+    try:
+        room = str(sys.argv[1])
+        PORT = int(sys.argv[2])
+        print(room, PORT)
+        connect()
+        
+    except: #TODO: Add exceptions
+        print("To run script use: python3 [name] [broker ip] [port]")
+    
