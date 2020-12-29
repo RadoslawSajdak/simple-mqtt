@@ -9,8 +9,8 @@ HOST = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
 PORT = 3000
 MAX_DEVICES = 10
 
-WELCOME_MESS = b"You're welcome at server\n"
-SUBSCRIBER = b"NOW YOURE SUBSCRIBER"
+WELCOME_MESS = "You're welcome at server\n +/[topic] - subscribe topic \n -/[topic] unsubscribe topic \n p/[topic]/[data] - publish data in topic \n "
+
 
 
 topics = {          # Dictionary for topics joined with list of it's subscribers
@@ -32,9 +32,9 @@ def run_server():
                         conn, addr = fds.accept()
                         inputs.append(conn)
                         print("Connection from ", addr[0],addr[1])
-                        conn.sendall(WELCOME_MESS)
+                        conn.sendall(WELCOME_MESS.encode())
                     else:
-                        """\
+                        """
                             All received data should be formated with pattern:
                             subscribing: +/[topic]
                             unsubscribing: -/[topic]
