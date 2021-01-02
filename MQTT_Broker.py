@@ -132,5 +132,6 @@ if __name__ == "__main__":
     thr.start()
 
     print( "Running server on ", HOST,":",PORT,"| Max devices: ",MAX_DEVICES)
+    print( "Multicast password is: ", multicast_password.decode())
     run_server()
     

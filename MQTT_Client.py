@@ -18,10 +18,11 @@ def reading_thread(socket):
     """ We are reading data in second thread to make it asynchronous """
     while(1):
         data = socket.recv(1024).decode('utf-8')
-        print(data)
         if data == "Bye":
-            print("Leaving")
+            print("Bye <- from broker")
             _exit(0)
+        else:
+            print(data)
 
 
 def connect():
