@@ -3,14 +3,42 @@ import socket,select
 import netifaces as ni
 from time import sleep
 
+#multicast imports
+import threading
+import struct
+
+
+
 ni.ifaddresses('wlan0')
 HOST = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
 #HOST = "192.168.0.144" # Uncomment this line to set server ip manually
 PORT = 3000
 MAX_DEVICES = 10
+WELCOME_MESS = "You're welcome at server\n +/[topic] - subscribe topic \n -/[topic] unsubscribe topic \n p/[topic]/[data] - publish data in topic \n Leave broker - exit"
 
-WELCOME_MESS = "You're welcome at server\n +/[topic] - subscribe topic \n -/[topic] unsubscribe topic \n p/[topic]/[data] - publish data in topic \n "
+# Multicast
+multicast_group = "224.1.1.1"
+multicast_port = 7000
+multicast_password = b"SocketProgramming"
 
+def run_multicast_srv():
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sck:
+        sck.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sck.bind((multicast_group,multicast_port))
+        
+        # '4s' - arg1 is 4char string, l - arg2 is long int
+        mreq = struct.pack("4sl", socket.inet_aton(multicast_group), socket.INADDR_ANY) 
+        sck.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+        while 1:
+            data_multi,client = sck.recvfrom(1024)
+            if (data_multi == multicast_password):
+                print("New multicast connection from ", client)
+                # Send broker address to UDP client
+                sck.sendto(bytearray((HOST + "|" + str(PORT)),"utf-8"),client)
+            else:
+                print("Multicast access from ", client, " denied!")
+                sck.sendto(b"Connection refused",client)
 
 
 topics = {          # Dictionary for topics joined with list of it's subscribers
@@ -87,6 +115,11 @@ def run_server():
                                 cli_sock.sendall(("You're not subscriber of " + rm_topic).encode())
                             
                             print(cli_addr, "Unsubscribed from: ",rm_topic)
+                        # Client disconnect
+                        elif str(data).find("exit"):
+                            print(cli_addr, "Disconnected")
+                            cli_sock.close()
+                            inputs.remove(cli_sock)
                             
                         if not data:
                             inputs.remove(fds)
@@ -94,5 +127,9 @@ def run_server():
                             print(data)
 
 if __name__ == "__main__":
+    thr = threading.Thread(target=run_multicast_srv)
+    thr.start()
+
     print( "Running server on ", HOST,":",PORT,"| Max devices: ",MAX_DEVICES)
     run_server()
+    
