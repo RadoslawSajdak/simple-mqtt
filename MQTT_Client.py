@@ -19,7 +19,7 @@ def reading_thread(socket):
     while(1):
         data = socket.recv(1024).decode('utf-8')
         print(data)
-        if data == "":
+        if data == "Bye":
             print("Leaving")
             _exit(0)
 

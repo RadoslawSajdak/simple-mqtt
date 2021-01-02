@@ -116,11 +116,12 @@ def run_server():
                             
                             print(cli_addr, "Unsubscribed from: ",rm_topic)
                         # Client disconnect
-                        elif str(data).find("exit"):
+                        elif str(data).find("exit") > 0:
                             print(cli_addr, "Disconnected")
+                            cli_sock.sendall(b"Bye")
                             cli_sock.close()
                             inputs.remove(cli_sock)
-                            
+
                         if not data:
                             inputs.remove(fds)
                         else:
