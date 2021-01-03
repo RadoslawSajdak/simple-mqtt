@@ -131,6 +131,7 @@ def run_server():
 if __name__ == "__main__":
     try:
         HOST = ni.ifaddresses(sys.argv[1])[ni.AF_INET][0]['addr']
+        multicast_password = bytearray(sys.argv[2], "utf-8")
         print("Interface",sys.argv[1],"address is:",HOST)
     except:
         pass
