@@ -2,6 +2,7 @@ import socket,select
 ## Get local interface ip ##
 import netifaces as ni
 from time import sleep
+import sys
 
 #multicast imports
 import threading
@@ -128,6 +129,12 @@ def run_server():
                             print(data)
 
 if __name__ == "__main__":
+    try:
+        HOST = ni.ifaddresses(sys.argv[1])[ni.AF_INET][0]['addr']
+        print("Interface",sys.argv[1],"address is:",HOST)
+    except:
+        pass
+    
     thr = threading.Thread(target=run_multicast_srv)
     thr.start()
 
