@@ -8,8 +8,7 @@ import logging
 #multicast imports
 import threading
 import struct
-
-
+from daemonize import Daemonize
 
 ni.ifaddresses('wlan0')
 HOST = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
@@ -27,6 +26,11 @@ multicast_password = b"SocketProgramming"
 logging.basicConfig(filename='/var/log/MQTT_Broker.log',format='%(levelname)s %(asctime)s %(message)s',
     datefmt='%m/%d/%Y %I:%M:%S %p', filemode='a', level=logging.INFO)
 logger = logging.getLogger("Broker")
+logger.propagate = False
+file_handler = logging.FileHandler("/var/log/MQTT_Broker.log","a")
+file_handler.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+keep_fds = [file_handler.stream.fileno()]
 
 def run_multicast_srv():
 
@@ -137,18 +141,28 @@ def run_server():
 
 
 
-if __name__ == "__main__":
+def main():
+    
+
+    global HOST, multicast_password, logger
+
+    print("Main")
+    logger.info("Ops")
     try:
         HOST = ni.ifaddresses(sys.argv[1])[ni.AF_INET][0]['addr']
         multicast_password = bytearray(sys.argv[2], "utf-8")
     except:
         pass
-    
+    logger.info( "Running server on %s : %s | Max devices: %d", HOST,PORT,MAX_DEVICES)
+    logger.info( "Multicast password is: %s", multicast_password.decode())
 
     thr = threading.Thread(target=run_multicast_srv)
     thr.start()
 
-    logger.info( "Running server on %s : %s | Max devices: %d", HOST,PORT,MAX_DEVICES)
-    logger.info( "Multicast password is: %s", multicast_password.decode())
-    run_server()
     
+    run_server()
+
+pid = "/tmp/MQTT_Broker_d.pid"
+
+daemon = Daemonize(app="MQTT_Broker",pid = pid, action = main, keep_fds=keep_fds, auto_close_fds=False, logger=logger)
+daemon.start()
