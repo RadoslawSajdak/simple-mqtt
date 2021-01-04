@@ -25,12 +25,7 @@ multicast_password = b"SocketProgramming"
 # Logging to file
 logging.basicConfig(filename='/var/log/MQTT_Broker.log',format='%(levelname)s %(asctime)s %(message)s',
     datefmt='%m/%d/%Y %I:%M:%S %p', filemode='a', level=logging.INFO)
-logger = logging.getLogger("Broker")
-logger.propagate = False
-file_handler = logging.FileHandler("/var/log/MQTT_Broker.log","a")
-file_handler.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-keep_fds = [file_handler.stream.fileno()]
+logger = logging.getLogger(__name__)
 
 def run_multicast_srv():
 
@@ -45,11 +40,11 @@ def run_multicast_srv():
         while 1:
             data_multi,client = sck.recvfrom(1024)
             if (data_multi == multicast_password):
-                logger.info("New multicast connection from %s", client)
+                logger.warning("New multicast connection from %s", client)
                 # Send broker address to UDP client
                 sck.sendto(bytearray((HOST + "|" + str(PORT)),"utf-8"),client)
             else:
-                logger.info("Multicast access from %s denied!", client)
+                logger.error("Multicast access from %s denied!", client)
                 sck.sendto(b"Connection refused",client)
 
 
@@ -110,7 +105,7 @@ def run_server():
                                 # Send to all subscribers #
                                 for snd in topics[top]:
                                     snd.sendall((pub + " <-from " + top).encode())
-                                logger.info("%s Published in %s",cli_addr, top)
+                                logger.info("%s Published %s in %s",cli_addr, pub, top)
                             except:
                                 cli_sock.sendall("syntax is p/topic/message".encode())
 
@@ -146,8 +141,6 @@ def main():
 
     global HOST, multicast_password, logger
 
-    print("Main")
-    logger.info("Ops")
     try:
         HOST = ni.ifaddresses(sys.argv[1])[ni.AF_INET][0]['addr']
         multicast_password = bytearray(sys.argv[2], "utf-8")
@@ -163,6 +156,6 @@ def main():
     run_server()
 
 pid = "/tmp/MQTT_Broker_d.pid"
-
-daemon = Daemonize(app="MQTT_Broker",pid = pid, action = main, keep_fds=keep_fds, auto_close_fds=False, logger=logger)
-daemon.start()
+if __name__ == "__main__":
+    daemon = Daemonize(app="MQTT_Broker",pid = pid, action = main, auto_close_fds=False, logger=logger)
+    daemon.start()
