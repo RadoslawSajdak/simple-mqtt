@@ -3,6 +3,7 @@ import socket,select
 import netifaces as ni
 from time import sleep
 import sys
+import logging
 
 #multicast imports
 import threading
@@ -22,7 +23,13 @@ multicast_group = "224.1.1.1"
 multicast_port = 7000
 multicast_password = b"SocketProgramming"
 
+# Logging to file
+logging.basicConfig(filename='/var/log/MQTT_Broker.log',format='%(levelname)s %(asctime)s %(message)s',
+    datefmt='%m/%d/%Y %I:%M:%S %p', filemode='a', level=logging.INFO)
+logger = logging.getLogger("Broker")
+
 def run_multicast_srv():
+
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as sck:
         sck.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sck.bind((multicast_group,multicast_port))
@@ -34,11 +41,11 @@ def run_multicast_srv():
         while 1:
             data_multi,client = sck.recvfrom(1024)
             if (data_multi == multicast_password):
-                print("New multicast connection from ", client)
+                logger.info("New multicast connection from %s", client)
                 # Send broker address to UDP client
                 sck.sendto(bytearray((HOST + "|" + str(PORT)),"utf-8"),client)
             else:
-                print("Multicast access from ", client, " denied!")
+                logger.info("Multicast access from %s denied!", client)
                 sck.sendto(b"Connection refused",client)
 
 
@@ -60,7 +67,7 @@ def run_server():
                     if fds is s:
                         conn, addr = fds.accept()
                         inputs.append(conn)
-                        print("Connection from ", addr[0],addr[1])
+                        logger.info("Connection from %s %s", addr[0],addr[1])
                         conn.sendall(WELCOME_MESS.encode())
                     else:
                         """
@@ -85,7 +92,7 @@ def run_server():
                                 topics[new_topic].append(cli_sock)
                             except:
                                 topics[new_topic] = [cli_sock]
-                            print(cli_addr, "Subscribed:",new_topic)
+                            logger.info("%s Subscribed: %s",cli_addr, new_topic)
 
                             cli_sock.sendall("You're subscriber of ".encode() + new_topic.encode())         # Return message to client
                         # Publishing #
@@ -99,7 +106,7 @@ def run_server():
                                 # Send to all subscribers #
                                 for snd in topics[top]:
                                     snd.sendall((pub + " <-from " + top).encode())
-                                print(cli_addr, "Published in", top)
+                                logger.info("%s Published in %s",cli_addr, top)
                             except:
                                 cli_sock.sendall("syntax is p/topic/message".encode())
 
@@ -115,31 +122,33 @@ def run_server():
                             except:
                                 cli_sock.sendall(("You're not subscriber of " + rm_topic).encode())
                             
-                            print(cli_addr, "Unsubscribed from: ",rm_topic)
+                            logger.info("%s Unsubscribed from: %s",cli_addr, rm_topic)
                         # Client disconnect
                         elif str(data).find("exit") > 0:
-                            print(cli_addr, "Disconnected")
+                            logger.info("%s Disconnected", cli_addr)
                             cli_sock.sendall(b"Bye")
                             cli_sock.close()
                             inputs.remove(cli_sock)
-
+                        else:
+                            logger.warning("Wrong data came from %s! %s",cli_addr,data)
                         if not data:
                             inputs.remove(fds)
-                        else:
-                            print(data)
+                        
+
+
 
 if __name__ == "__main__":
     try:
         HOST = ni.ifaddresses(sys.argv[1])[ni.AF_INET][0]['addr']
         multicast_password = bytearray(sys.argv[2], "utf-8")
-        print("Interface",sys.argv[1],"address is:",HOST)
     except:
         pass
     
+
     thr = threading.Thread(target=run_multicast_srv)
     thr.start()
 
-    print( "Running server on ", HOST,":",PORT,"| Max devices: ",MAX_DEVICES)
-    print( "Multicast password is: ", multicast_password.decode())
+    logger.info( "Running server on %s : %s | Max devices: %d", HOST,PORT,MAX_DEVICES)
+    logger.info( "Multicast password is: %s", multicast_password.decode())
     run_server()
     
